@@ -64,13 +64,13 @@ def _get_html5_validation_msg(driver, field_id):
 def login(driver, wait):
     """Đăng nhập vào hệ thống Odoo"""
     log_step(0, "ĐĂNG NHẬP")
-    driver.get(ODOO_URL)
+    driver.get(_LOGIN_URL)
     time.sleep(2)
 
     safe_fill(driver, wait, "//input[@id='login']", ODOO_USER)
     safe_fill(driver, wait, "//input[@id='password']", ODOO_PASS)
     time.sleep(1)
-    safe_click(driver, wait, "//button[normalize-space()='Log in']")
+    safe_click(driver, wait, "//button[normalize-space()='Đăng nhập' or normalize-space()='Log in']")
     time.sleep(3)
 
     if "/odoo" in driver.current_url:

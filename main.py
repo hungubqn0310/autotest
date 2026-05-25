@@ -14,7 +14,7 @@ from config import PRODUCT_NAME, PRODUCT_QTY
 from helpers import setup_driver, log_err
 from login import login, run_login_suite
 from logout import run_logout_suite
-from product import create_product
+from product import create_product, run_product_suite
 from purchase import create_purchase_and_receipt
 from sales import create_sale_and_delivery
 
@@ -40,9 +40,9 @@ def run_automation(driver, wait):
 def run_tests(driver, wait, suite=None):
     """Chạy test suite theo tên, hoặc chạy tất cả nếu không chỉ định."""
     suites = {
-        "login":  run_login_suite,
-        "logout": run_logout_suite,
-        # Thêm suite khác vào đây khi có: "product": run_product_suite, ...
+        "login":   run_login_suite,
+        "logout":  run_logout_suite,
+        "product": run_product_suite,
     }
 
     if suite and suite in suites:

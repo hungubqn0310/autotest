@@ -19,18 +19,15 @@ def _ensure_logged_in(driver, wait):
 
 
 def _do_logout(driver, wait):
-    """Click avatar → chọn Log out trong dropdown."""
-    safe_click(driver, wait,
-        "//li[contains(@class,'o_user_menu')]//a | "
-        "//a[contains(@class,'o_user_menu_toggle')] | "
-        "//nav//a[@data-bs-toggle='dropdown' and "
-        ".//*[contains(@class,'o_avatar') or contains(@class,'fa-user')]]",
-        use_js=True)
+    """Click avatar → chọn Đăng xuất trong dropdown."""
+    # Chờ SPA render xong navbar trước khi click
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
+    wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(@class,'o_user_menu')]")))
+    time.sleep(1)
+    safe_click(driver, wait, "//button[contains(@class,'o_user_menu')]", use_js=True)
     time.sleep(0.8)
-    safe_click(driver, wait,
-        "//a[contains(@href,'logout') or "
-        "normalize-space(text())='Log out' or "
-        "normalize-space(text())='Logout']")
+    safe_click(driver, wait, "//*[@data-menu='logout']")
     time.sleep(2)
 
 
@@ -149,5 +146,8 @@ if __name__ == "__main__":
     try:
         run_logout_suite(driver, wait)
     finally:
-        input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        try:
+            input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        except EOFError:
+            pass
         driver.quit()
