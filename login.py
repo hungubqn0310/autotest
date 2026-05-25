@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from config import ODOO_URL, ODOO_USER, ODOO_PASS
 from helpers import log_step, log_ok, log_err, log_info, safe_fill, safe_click
 
-# Tính URL trang login từ ODOO_URL (vd: https://xxx.odoo.com/odoo -> https://xxx.odoo.com/web/login)
+
 _parsed = urlparse(ODOO_URL)
 _LOGIN_URL = f"{_parsed.scheme}://{_parsed.netloc}/web/login"
 
@@ -19,19 +19,21 @@ def _go_to_login(driver):
 
 
 def _fill_login_form(driver, wait, email, password):
-    email_input = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@id='login']")))
+    email_input = wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@id='login']")))
+    driver.execute_script("arguments[0].scrollIntoView(true);", email_input)
     email_input.clear()
     if email:
         email_input.send_keys(email)
 
-    password_input = driver.find_element(By.XPATH, "//input[@id='password']")
+    password_input = wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@id='password']")))
     password_input.clear()
     if password:
         password_input.send_keys(password)
 
 
 def _click_login(driver, wait):
-    safe_click(driver, wait, "//button[normalize-space()='Log in']")
+    # Support both English "Log in" and Vietnamese "Đăng nhập"
+    safe_click(driver, wait, "//button[normalize-space()='Đăng nhập' or normalize-space()='Log in']")
     time.sleep(2)
 
 
@@ -85,7 +87,7 @@ def tc01_login_success(driver, wait):
     """TC01 – Đăng nhập thành công với tài khoản hợp lệ"""
     log_step(1, "TC01 – Đăng nhập thành công")
     _go_to_login(driver)
-    _fill_login_form(driver, wait, "admin@gmail.com", "admin")
+    _fill_login_form(driver, wait, ODOO_USER, ODOO_PASS)
     _click_login(driver, wait)
 
     if "/odoo" in driver.current_url:
@@ -224,5 +226,8 @@ if __name__ == "__main__":
     try:
         run_login_suite(driver, wait)
     finally:
-        input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        try:
+            input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        except EOFError:
+            pass
         driver.quit()

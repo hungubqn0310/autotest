@@ -73,7 +73,10 @@ def main():
         traceback.print_exc()
 
     finally:
-        input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        try:
+            input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+        except EOFError:
+            pass
         driver.quit()
 
 

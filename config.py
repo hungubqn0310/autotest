@@ -7,9 +7,9 @@ from datetime import datetime
 # ============================================================
 # ⚙️ CẤU HÌNH - Chỉnh sửa các thông số
 # ============================================================
-ODOO_URL    = "https://lan-anh-demo.odoo.com/odoo"   # <== URL Odoo
+ODOO_URL    = "https://lananh.odoo.com/"   # <== URL Odoo
 ODOO_USER   = "phamlananh13022004@gmail.com"         # <== Tài khoản đăng nhập
-ODOO_PASS   = "admin"                                # <== Mật khẩu
+ODOO_PASS   = "Hlanh@9413"                                # <== Mật khẩu
 # ============================================================
 
 # Tên sản phẩm tự động theo ngày giờ
