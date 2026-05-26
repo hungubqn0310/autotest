@@ -117,18 +117,20 @@ def tc09_relogin_after_logout(driver, wait):
         return False
 
 
-def run_logout_suite(driver, wait):
+def run_logout_suite(driver, wait, selected_tcs: list[str] | None = None):
     """Chạy toàn bộ Suite 1.2 – Đăng xuất (TC06–TC09)"""
     print("\n" + "=" * 60)
     print("  SUITE 1.2 – ĐĂNG XUẤT")
     print("=" * 60)
 
-    results = {
-        "TC06": tc06_logout_success(driver, wait),
-        "TC07": tc07_session_invalidated_after_logout(driver, wait),
-        "TC08": tc08_back_button_after_logout(driver, wait),
-        "TC09": tc09_relogin_after_logout(driver, wait),
+    _ALL_TCS = {
+        "TC06": tc06_logout_success,
+        "TC07": tc07_session_invalidated_after_logout,
+        "TC08": tc08_back_button_after_logout,
+        "TC09": tc09_relogin_after_logout,
     }
+    to_run = selected_tcs if selected_tcs else list(_ALL_TCS.keys())
+    results = {tc_id: _ALL_TCS[tc_id](driver, wait) for tc_id in to_run if tc_id in _ALL_TCS}
 
     _print_suite_result("SUITE 1.2 – ĐĂNG XUẤT", results)
     return results

@@ -184,19 +184,21 @@ def tc05_login_invalid_email_format(driver, wait):
         return False
 
 
-def run_login_suite(driver, wait):
+def run_login_suite(driver, wait, selected_tcs: list[str] | None = None):
     """Chạy toàn bộ Suite 1.1 – Đăng nhập (TC01–TC05)"""
     print("\n" + "=" * 60)
     print("  SUITE 1.1 – ĐĂNG NHẬP")
     print("=" * 60)
 
-    results = {
-        "TC01": tc01_login_success(driver, wait),
-        "TC02": tc02_login_wrong_password(driver, wait),
-        "TC03": tc03_login_empty_email(driver, wait),
-        "TC04": tc04_login_empty_password(driver, wait),
-        "TC05": tc05_login_invalid_email_format(driver, wait),
+    _ALL_TCS = {
+        "TC01": tc01_login_success,
+        "TC02": tc02_login_wrong_password,
+        "TC03": tc03_login_empty_email,
+        "TC04": tc04_login_empty_password,
+        "TC05": tc05_login_invalid_email_format,
     }
+    to_run = selected_tcs if selected_tcs else list(_ALL_TCS.keys())
+    results = {tc_id: _ALL_TCS[tc_id](driver, wait) for tc_id in to_run if tc_id in _ALL_TCS}
 
     _print_suite_result("SUITE 1.1 – ĐĂNG NHẬP", results)
     return results

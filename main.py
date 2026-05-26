@@ -6,6 +6,9 @@ Cách chạy:
   python main.py test     → chạy toàn bộ test suite (Suite 1.1 Login)
   python main.py test login  → chỉ chạy suite đăng nhập
 """
+import warnings
+warnings.filterwarnings("ignore", message="urllib3")
+
 import sys
 import traceback
 from selenium.webdriver.support.ui import WebDriverWait
@@ -15,7 +18,7 @@ from helpers import setup_driver, log_err
 from login import login, run_login_suite
 from logout import run_logout_suite
 from product import create_product, run_product_suite
-from purchase import create_purchase_and_receipt
+from purchase import create_purchase_and_receipt, run_purchase_suite
 from sales import create_sale_and_delivery
 
 
@@ -37,16 +40,21 @@ def run_automation(driver, wait):
     print("="*60 + "\n")
 
 
-def run_tests(driver, wait, suite=None):
+def run_tests(driver, wait, suite=None, selected_tcs=None):
     """Chạy test suite theo tên, hoặc chạy tất cả nếu không chỉ định."""
     suites = {
-        "login":   run_login_suite,
-        "logout":  run_logout_suite,
-        "product": run_product_suite,
+        "login":    run_login_suite,
+        "logout":   run_logout_suite,
+        "product":  run_product_suite,
+        "purchase": run_purchase_suite,
     }
 
     if suite and suite in suites:
-        suites[suite](driver, wait)
+        fn = suites[suite]
+        if selected_tcs:
+            fn(driver, wait, selected_tcs=selected_tcs)
+        else:
+            fn(driver, wait)
     else:
         print("\n  Chạy tất cả test suites...\n")
         for name, fn in suites.items():
@@ -58,13 +66,15 @@ def main():
     args = sys.argv[1:]  # bỏ tên script
     mode = args[0] if args else "auto"
     suite = args[1] if len(args) > 1 else None
+    # args[2] = "TC12,TC15,TC16" → filter TC lẻ khi chạy từ web UI
+    selected_tcs = args[2].split(",") if len(args) > 2 else None
 
     driver = setup_driver()
     wait = WebDriverWait(driver, 30)
 
     try:
         if mode == "test":
-            run_tests(driver, wait, suite)
+            run_tests(driver, wait, suite, selected_tcs)
         else:
             run_automation(driver, wait)
 
