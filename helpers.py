@@ -1,6 +1,7 @@
 """
 Các hàm tiện ích cho Odoo Automation
 """
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -17,7 +18,13 @@ def setup_driver():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     options.add_argument("--start-maximized")
-    service = Service(ChromeDriverManager().install())
+
+    driver_path = ChromeDriverManager().install()
+    # webdriver-manager đôi khi trả về THIRD_PARTY_NOTICES thay vì exe
+    if not driver_path.endswith(".exe"):
+        driver_path = os.path.join(os.path.dirname(driver_path), "chromedriver.exe")
+
+    service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
     return driver
 

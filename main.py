@@ -10,6 +10,8 @@ import warnings
 warnings.filterwarnings("ignore", message="urllib3")
 
 import sys
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
 import traceback
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -19,7 +21,8 @@ from login import login, run_login_suite
 from logout import run_logout_suite
 from product import create_product, run_product_suite
 from purchase import create_purchase_and_receipt, run_purchase_suite
-from sales import create_sale_and_delivery
+from inventory import run_inventory_suite
+from sales import create_sale_and_delivery, run_sales_suite
 
 
 def run_automation(driver, wait):
@@ -43,10 +46,12 @@ def run_automation(driver, wait):
 def run_tests(driver, wait, suite=None, selected_tcs=None):
     """Chạy test suite theo tên, hoặc chạy tất cả nếu không chỉ định."""
     suites = {
-        "login":    run_login_suite,
-        "logout":   run_logout_suite,
-        "product":  run_product_suite,
-        "purchase": run_purchase_suite,
+        "login":     run_login_suite,
+        "logout":    run_logout_suite,
+        "product":   run_product_suite,
+        "inventory": run_inventory_suite,
+        "purchase":  run_purchase_suite,
+        "sales":     run_sales_suite,
     }
 
     if suite and suite in suites:
@@ -83,10 +88,11 @@ def main():
         traceback.print_exc()
 
     finally:
-        try:
-            input("\n⏸  Nhấn Enter để đóng trình duyệt...")
-        except EOFError:
-            pass
+        if sys.stdin.isatty():
+            try:
+                input("\n⏸  Nhấn Enter để đóng trình duyệt...")
+            except EOFError:
+                pass
         driver.quit()
 
 

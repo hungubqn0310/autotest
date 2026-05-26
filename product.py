@@ -1,5 +1,5 @@
 """
-Module test sản phẩm trong Odoo - Suite 2.1 (TC07-TC11)
+Module test sản phẩm trong Odoo - Suite 2.1 (TC10-TC17)
 """
 import re
 import time
@@ -22,9 +22,6 @@ _PRODUCTS_URLS = [
     f"{_BASE_URL}/web#action=product.product_template_action_all",
 ]
 _PRODUCTS_URL = _PRODUCTS_URLS[0]
-
-# Shared state between TC10 and TC11 within the same suite run
-_suite_product: dict = {"name": None, "url": None}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -102,7 +99,6 @@ def _click_save(driver, wait):
              "(//i[@class='fa fa-cloud-upload fa-fw'])[1]/..")))
         driver.execute_script("arguments[0].click();", save_btn)
     except Exception:
-        # Fallback: click icon trực tiếp
         try:
             icon = driver.find_element(
                 By.XPATH, "(//i[@class='fa fa-cloud-upload fa-fw'])[1]")
@@ -156,15 +152,11 @@ def _parse_price(val: str) -> float:
     """Chuẩn hoá chuỗi giá về float (hỗ trợ cả định dạng VN/EU: 10.000,00)."""
     val = val.strip()
     if ',' in val and '.' in val:
-        # Xác định ký tự thập phân dựa theo vị trí xuất hiện sau cùng
         if val.rfind(',') > val.rfind('.'):
-            # EU: 10.000,00 → bỏ dấu chấm, đổi phẩy thành chấm
             val = val.replace('.', '').replace(',', '.')
         else:
-            # US: 10,000.00 → bỏ dấu phẩy
             val = val.replace(',', '')
     elif ',' in val:
-        # Chỉ có phẩy: nếu phần sau phẩy ≤ 2 chữ số → thập phân
         parts = val.split(',')
         if len(parts[-1]) <= 2:
             val = val.replace(',', '.')
@@ -175,6 +167,34 @@ def _parse_price(val: str) -> float:
         return float(cleaned)
     except ValueError:
         return -1.0
+
+
+def _enable_track_inventory(driver):
+    """Bật Track Inventory (is_storable) nếu chưa bật."""
+    try:
+        chk = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH,
+                "//input[@id='is_storable_0'] | "
+                "//div[@name='is_storable']//input[@type='checkbox']")))
+        if chk.is_selected():
+            log_info("Track Inventory đã bật sẵn")
+            return
+
+        chk.click()
+        time.sleep(1)
+
+        if not chk.is_selected():
+            driver.execute_script("""
+                var el = arguments[0];
+                el.checked = true;
+                el.dispatchEvent(new Event('input', {bubbles: true}));
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+            """, chk)
+            time.sleep(1)
+
+        log_info(f"Track Inventory: {'BẬT' if chk.is_selected() else 'CHƯA BẬT'}")
+    except Exception as e:
+        log_err(f"Không bật được Track Inventory: {e}")
 
 
 def _print_suite_result(title, results):
@@ -190,12 +210,12 @@ def _print_suite_result(title, results):
 
 
 # ──────────────────────────────────────────────────────────────
-# TC07 – TC09
+# SUITE 2.1 – SẢN PHẨM (TC10–TC17)
 # ──────────────────────────────────────────────────────────────
 
-def tc07_create_product_success(driver, wait):
-    """TC07 – Tạo sản phẩm mới thành công"""
-    log_step(7, "TC07 – Tạo sản phẩm mới thành công")
+def tc10_create_product_success(driver, wait):
+    """TC10 – Tạo sản phẩm mới thành công"""
+    log_step(10, "TC10 – Tạo sản phẩm mới thành công")
     _ensure_logged_in(driver, wait)
 
     name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
@@ -209,16 +229,16 @@ def tc07_create_product_success(driver, wait):
 
     if _is_saved(driver):
         breadcrumb = _get_breadcrumb_name(driver)
-        log_ok(f"TC07 PASS: Lưu thành công. URL: {driver.current_url} | Breadcrumb: '{breadcrumb}'")
+        log_ok(f"TC10 PASS: Lưu thành công. URL: {driver.current_url} | Breadcrumb: '{breadcrumb}'")
         return True
     else:
-        log_err(f"TC07 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
+        log_err(f"TC10 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
         return False
 
 
-def tc08_create_product_empty_name(driver, wait):
-    """TC08 – Tạo sản phẩm – để trống tên"""
-    log_step(8, "TC08 – Tạo sản phẩm – để trống tên")
+def tc11_create_product_empty_name(driver, wait):
+    """TC11 – Tạo sản phẩm – để trống tên"""
+    log_step(11, "TC11 – Tạo sản phẩm – để trống tên")
     _ensure_logged_in(driver, wait)
 
     _go_to_product_list(driver, wait)
@@ -229,18 +249,18 @@ def tc08_create_product_empty_name(driver, wait):
 
     if not _is_saved(driver):
         if _has_name_error(driver):
-            log_ok("TC08 PASS: Hệ thống báo lỗi trường tên bắt buộc, không lưu được")
+            log_ok("TC11 PASS: Hệ thống báo lỗi trường tên bắt buộc, không lưu được")
         else:
-            log_ok("TC08 PASS: Không lưu được sản phẩm khi tên trống (URL không chứa ID)")
+            log_ok("TC11 PASS: Không lưu được sản phẩm khi tên trống (URL không chứa ID)")
         return True
     else:
-        log_err(f"TC08 FAIL: Lưu được sản phẩm dù tên trống. URL: {driver.current_url}")
+        log_err(f"TC11 FAIL: Lưu được sản phẩm dù tên trống. URL: {driver.current_url}")
         return False
 
 
-def tc09_create_product_valid_price(driver, wait):
-    """TC09 – Tạo sản phẩm – điền giá bán hợp lệ"""
-    log_step(9, "TC09 – Tạo sản phẩm – điền giá bán hợp lệ")
+def tc12_create_product_valid_price(driver, wait):
+    """TC12 – Tạo sản phẩm – điền giá bán hợp lệ"""
+    log_step(12, "TC12 – Tạo sản phẩm – điền giá bán hợp lệ")
     _ensure_logged_in(driver, wait)
 
     name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
@@ -253,10 +273,9 @@ def tc09_create_product_valid_price(driver, wait):
     _click_save(driver, wait)
 
     if not _is_saved(driver):
-        log_err(f"TC09 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
+        log_err(f"TC12 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
         return False
 
-    # Kiểm tra giá hiển thị đúng sau khi lưu
     try:
         price_el = driver.find_element(
             By.XPATH,
@@ -266,246 +285,14 @@ def tc09_create_product_valid_price(driver, wait):
         expected_val = _parse_price(PRODUCT_PRICE)
 
         if abs(displayed_val - expected_val) < 0.01:
-            log_ok(f"TC09 PASS: Giá bán lưu đúng = {displayed} (expected {PRODUCT_PRICE})")
+            log_ok(f"TC12 PASS: Giá bán lưu đúng = {displayed} (expected {PRODUCT_PRICE})")
             return True
         else:
-            log_err(f"TC09 FAIL: Giá hiển thị '{displayed}' ≠ expected '{PRODUCT_PRICE}'")
+            log_err(f"TC12 FAIL: Giá hiển thị '{displayed}' ≠ expected '{PRODUCT_PRICE}'")
             return False
     except Exception as e:
-        log_err(f"TC09 FAIL: Không đọc được giá sau khi lưu – {e}")
+        log_err(f"TC12 FAIL: Không đọc được giá sau khi lưu – {e}")
         return False
-
-
-def _enable_track_inventory(driver):
-    """Bật Track Inventory (is_storable) nếu chưa bật."""
-    try:
-        chk = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH,
-                "//input[@id='is_storable_0'] | "
-                "//div[@name='is_storable']//input[@type='checkbox']")))
-        if chk.is_selected():
-            log_info("Track Inventory đã bật sẵn")
-            return
-
-        # Native click triggers OWL change/input events
-        chk.click()
-        time.sleep(1)
-
-        if not chk.is_selected():
-            # Fallback: dispatch change event explicitly
-            driver.execute_script("""
-                var el = arguments[0];
-                el.checked = true;
-                el.dispatchEvent(new Event('input', {bubbles: true}));
-                el.dispatchEvent(new Event('change', {bubbles: true}));
-            """, chk)
-            time.sleep(1)
-
-        log_info(f"Track Inventory: {'BẬT' if chk.is_selected() else 'CHƯA BẬT'}")
-    except Exception as e:
-        log_err(f"Không bật được Track Inventory: {e}")
-
-
-def tc10_update_inventory(driver, wait):
-    """TC10 – Cập nhật số lượng tồn kho thành công"""
-    log_step(10, "TC10 – Cập nhật số lượng tồn kho thành công")
-    _ensure_logged_in(driver, wait)
-
-    name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
-    log_info(f"Tạo sản phẩm: {name}")
-
-    _go_to_product_list(driver, wait)
-    _click_new(driver, wait)
-    _fill_name(driver, wait, name)
-    _enable_track_inventory(driver)
-
-    # Điền "Số lượng hiện có" trực tiếp trên form (hiện sau khi bật Track Inventory)
-    try:
-        qty_field = WebDriverWait(driver, 6).until(EC.element_to_be_clickable(
-            (By.XPATH,
-             "//div[@name='qty_available']//input | "
-             "//input[@id='qty_available_0'] | "
-             "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
-             "/following-sibling::div//input | "
-             "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
-             "/..//input")))
-        qty_field.click()
-        qty_field.send_keys(Keys.CONTROL + "a")
-        qty_field.send_keys(PRODUCT_QTY)
-        time.sleep(0.5)
-        log_info(f"Đã điền Số lượng hiện có = {PRODUCT_QTY}")
-    except Exception as e:
-        log_err(f"TC10 FAIL: Không điền được Số lượng hiện có – {e}")
-        return False
-
-    _fill_price(driver, wait, PRODUCT_PRICE)
-    _click_save(driver, wait)
-
-    if not _is_saved(driver):
-        log_err(f"TC10 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
-        return False
-
-    product_url = driver.current_url
-    _suite_product["name"] = name
-    _suite_product["url"] = product_url
-    log_info(f"Đã lưu: {product_url}")
-
-    # Xử lý popup xác nhận "Áp dụng tất cả" nếu Odoo hiện dialog
-    try:
-        confirm = WebDriverWait(driver, 4).until(EC.element_to_be_clickable(
-            (By.XPATH,
-             "//div[contains(@class,'modal')]//button["
-             "contains(.,'OK') or contains(.,'Áp dụng') or "
-             "contains(.,'Apply') or contains(.,'Xác nhận')]")))
-        confirm.click()
-        time.sleep(1.5)
-        wait_for_toast_gone(wait)
-    except Exception:
-        pass
-
-    time.sleep(1)
-    expected = _parse_price(PRODUCT_QTY)
-
-    # Kiểm tra: đọc lại trường qty_available trên form sau khi lưu
-    try:
-        qty_el = driver.find_element(
-            By.XPATH,
-            "//div[@name='qty_available']//input | "
-            "//input[@id='qty_available_0'] | "
-            "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
-            "/..//input")
-        val_str = (qty_el.get_attribute("value") or qty_el.text or "").strip()
-        val = _parse_price(val_str)
-        if abs(val - expected) < 0.01:
-            log_ok(f"TC10 PASS: Số lượng hiện có = {val_str} (expected {PRODUCT_QTY})")
-            return True
-    except Exception:
-        pass
-
-    # Fallback: đọc stat button "Hiện có" trên form
-    try:
-        stat = driver.find_element(
-            By.XPATH,
-            "//button[contains(@class,'oe_stat_button') and contains(.,'Hiện có')]")
-        nums = re.findall(r'[\d.,]+', stat.text)
-        for n in nums:
-            if abs(_parse_price(n) - expected) < 0.01:
-                log_ok(f"TC10 PASS: Hiện có = {n} (expected {PRODUCT_QTY})")
-                return True
-        log_err(f"TC10 FAIL: Hiện có = '{stat.text}', expected {PRODUCT_QTY}")
-    except Exception as e:
-        log_err(f"TC10 FAIL: Không xác minh được số lượng – {e}")
-    return False
-
-
-def tc11_search_product(driver, wait):
-    """TC11 – Tìm kiếm sản phẩm đã tạo"""
-    log_step(11, "TC11 – Tìm kiếm sản phẩm đã tạo")
-    _ensure_logged_in(driver, wait)
-
-    search_name = _suite_product.get("name") or "SP_TEST_"
-    log_info(f"Tìm kiếm: '{search_name}'")
-
-    _go_to_product_list(driver, wait)
-    time.sleep(1)
-
-    # Xóa filter đang có
-    try:
-        for _ in range(5):
-            dels = driver.find_elements(
-                By.XPATH,
-                "//span[contains(@class,'o_delete')]")
-            if not dels:
-                break
-            driver.execute_script("arguments[0].click();", dels[0])
-            time.sleep(0.4)
-    except Exception:
-        pass
-
-    # Gõ tên vào ô tìm kiếm rồi Enter
-    try:
-        search_input = WebDriverWait(driver, 8).until(EC.element_to_be_clickable(
-            (By.XPATH, "//input[contains(@class,'o_searchview_input')]")))
-        search_input.click()
-        search_input.send_keys(Keys.CONTROL + "a")
-        search_input.send_keys(search_name)
-        search_input.send_keys(Keys.ENTER)
-        time.sleep(2)
-    except Exception as e:
-        log_err(f"TC11 FAIL: Không tìm thấy ô search – {e}")
-        return False
-
-    # Kiểm tra kanban view
-    try:
-        cards = driver.find_elements(
-            By.XPATH,
-            f"//div[contains(@class,'o_kanban_record')]"
-            f"[.//*[contains(text(),'{search_name}')]]")
-        if cards:
-            log_ok(f"TC11 PASS: Tìm thấy '{search_name}' trong kanban view")
-            return True
-    except Exception:
-        pass
-
-    # Kiểm tra list view
-    try:
-        rows = driver.find_elements(
-            By.XPATH,
-            f"//td[@name='name']//*[contains(text(),'{search_name}')] | "
-            f"//td[contains(text(),'{search_name}')]")
-        if rows:
-            log_ok(f"TC11 PASS: Tìm thấy '{search_name}' trong list view")
-            return True
-    except Exception:
-        pass
-
-    # Fallback: tìm bất kỳ phần tử nào chứa prefix SP_TEST_
-    try:
-        any_match = driver.find_elements(
-            By.XPATH,
-            "//*[contains(@class,'o_kanban_record') or @name='name']"
-            "//*[contains(text(),'SP_TEST_')]")
-        if any_match:
-            found_text = any_match[0].text.strip()
-            log_ok(f"TC11 PASS: Tìm thấy '{found_text}'")
-            return True
-    except Exception:
-        pass
-
-    log_err(f"TC11 FAIL: Không tìm thấy '{search_name}' trong kết quả")
-    return False
-
-
-def tc12_create_product_negative_price(driver, wait):
-    """TC12 – Tạo sản phẩm – nhập giá âm"""
-    log_step(12, "TC12 – Tạo sản phẩm – nhập giá âm")
-    _ensure_logged_in(driver, wait)
-
-    name = "SP_TEST_NEG"
-    log_info(f"Tên: {name} | Giá: -10000")
-
-    _go_to_product_list(driver, wait)
-    _click_new(driver, wait)
-    _fill_name(driver, wait, name)
-    _fill_price(driver, wait, "-10000")
-    _click_save(driver, wait)
-
-    if not _is_saved(driver):
-        log_ok("TC12 PASS: Hệ thống không lưu được sản phẩm với giá âm")
-        return True
-
-    try:
-        driver.find_element(By.XPATH,
-            "//div[contains(@class,'o_notification') and contains(@class,'danger')] | "
-            "//div[contains(@class,'o_field_invalid')]")
-        log_ok("TC12 PASS: Hệ thống báo lỗi validation cho giá âm")
-        return True
-    except Exception:
-        pass
-
-    log_info(f"TC12 NOTE: Odoo cho phép lưu sản phẩm với giá âm (không có validation tích hợp). URL: {driver.current_url}")
-    log_ok("TC12 PASS: Hệ thống xử lý đúng theo rule Odoo (giá âm được chấp nhận)")
-    return True
 
 
 def tc13_create_product_zero_price(driver, wait):
@@ -652,23 +439,115 @@ def tc16_refresh_after_save(driver, wait):
         return False
 
 
+def tc17_search_product_after_create(driver, wait):
+    """TC17 – Kiểm tra tìm kiếm sản phẩm sau khi tạo"""
+    log_step(17, "TC17 – Kiểm tra tìm kiếm sản phẩm sau khi tạo")
+    _ensure_logged_in(driver, wait)
+
+    name = "SP_SEARCH"
+    log_info(f"Tạo sản phẩm: {name}")
+
+    _go_to_product_list(driver, wait)
+    _click_new(driver, wait)
+    _fill_name(driver, wait, name)
+    _fill_price(driver, wait, PRODUCT_PRICE)
+    _click_save(driver, wait)
+
+    if not _is_saved(driver):
+        log_err(f"TC17 FAIL: Không lưu được sản phẩm để tìm kiếm. URL: {driver.current_url}")
+        return False
+
+    log_info("Đã lưu, quay lại danh sách để tìm kiếm...")
+    _go_to_product_list(driver, wait)
+    time.sleep(1.5)
+
+    # Xóa filter đang có
+    try:
+        for _ in range(5):
+            dels = driver.find_elements(By.XPATH, "//span[contains(@class,'o_delete')]")
+            if not dels:
+                break
+            driver.execute_script("arguments[0].click();", dels[0])
+            time.sleep(0.4)
+    except Exception:
+        pass
+
+    # Gõ vào ô search
+    try:
+        search_input = WebDriverWait(driver, 8).until(EC.element_to_be_clickable(
+            (By.XPATH, "//input[contains(@class,'o_searchview_input')]")))
+        search_input.click()
+        search_input.send_keys(Keys.CONTROL + "a")
+        search_input.send_keys(name)
+        time.sleep(1)  # Chờ dropdown Odoo 17 xuất hiện
+
+        # Odoo 17: chọn option "Name" trong dropdown nếu có
+        try:
+            name_option = driver.find_element(By.XPATH,
+                "//div[contains(@class,'o_searchview_autocomplete')]"
+                "//li[contains(.,'Name') or contains(.,'Tên') or contains(.,'Product')]"
+                "[1]")
+            name_option.click()
+            time.sleep(1.5)
+        except Exception:
+            # Không có dropdown → nhấn Enter
+            search_input.send_keys(Keys.ENTER)
+            time.sleep(2)
+    except Exception as e:
+        log_err(f"TC17 FAIL: Không tìm thấy ô search – {e}")
+        return False
+
+    # Kiểm tra kết quả — kanban view
+    try:
+        cards = driver.find_elements(By.XPATH,
+            f"//div[contains(@class,'o_kanban_record')][.//*[contains(text(),'{name}')]]")
+        if cards:
+            log_ok(f"TC17 PASS: Tìm thấy '{name}' trong kanban view")
+            return True
+    except Exception:
+        pass
+
+    # Kiểm tra kết quả — list view
+    try:
+        rows = driver.find_elements(By.XPATH,
+            f"//td[@name='name']//*[contains(text(),'{name}')] | "
+            f"//td[contains(text(),'{name}')]")
+        if rows:
+            log_ok(f"TC17 PASS: Tìm thấy '{name}' trong list view")
+            return True
+    except Exception:
+        pass
+
+    # Fallback rộng: bất kỳ element nào chứa text SP_SEARCH trên trang
+    try:
+        any_match = driver.find_elements(By.XPATH,
+            f"//*[contains(text(),'{name}') or contains(@title,'{name}')]"
+            f"[not(contains(@class,'o_searchview'))]")
+        if any_match:
+            log_ok(f"TC17 PASS: Tìm thấy '{name}' trên trang kết quả")
+            return True
+    except Exception:
+        pass
+
+    log_err(f"TC17 FAIL: Không tìm thấy '{name}' trong kết quả tìm kiếm")
+    return False
+
+
 def run_product_suite(driver, wait, selected_tcs: list[str] | None = None):
-    """Chạy toàn bộ Suite 2.1 – Sản phẩm (TC07–TC16)"""
+    """Chạy toàn bộ Suite 2.1 – Sản phẩm (TC10–TC17)"""
     print("\n" + "=" * 60)
     print("  SUITE 2.1 – SẢN PHẨM")
     print("=" * 60)
 
     _ALL_TCS = {
-        "TC07": tc07_create_product_success,
-        "TC08": tc08_create_product_empty_name,
-        "TC09": tc09_create_product_valid_price,
-        "TC10": tc10_update_inventory,
-        "TC11": tc11_search_product,
-        "TC12": tc12_create_product_negative_price,
+        "TC10": tc10_create_product_success,
+        "TC11": tc11_create_product_empty_name,
+        "TC12": tc12_create_product_valid_price,
         "TC13": tc13_create_product_zero_price,
         "TC14": tc14_create_product_special_chars,
         "TC15": tc15_create_product_duplicate_name,
         "TC16": tc16_refresh_after_save,
+        "TC17": tc17_search_product_after_create,
     }
     to_run = selected_tcs if selected_tcs else list(_ALL_TCS.keys())
     results = {tc_id: _ALL_TCS[tc_id](driver, wait) for tc_id in to_run if tc_id in _ALL_TCS}

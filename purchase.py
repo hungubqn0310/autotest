@@ -171,7 +171,7 @@ def _process_receipt(driver, wait):
 
 
 # ══════════════════════════════════════════════════════════════
-# SUITE 3.1 – MUA HÀNG (TC12–TC16)
+# SUITE 3.1 – MUA HÀNG (TC20–TC24)
 # ══════════════════════════════════════════════════════════════
 
 _PURCHASE_URL = f"{ODOO_URL.rstrip('/')}/odoo/purchase"
@@ -335,44 +335,44 @@ def _print_suite_result(title: str, results: dict):
 
 # ──────────────────────────────────────────────────────────────
 
-def tc12_create_and_confirm_purchase(driver, wait) -> bool:
-    """TC12 – Tạo đơn mua hàng và xác nhận thành công"""
-    log_step(12, "TC12 – Tạo đơn mua hàng và xác nhận thành công")
+def tc20_create_and_confirm_purchase(driver, wait) -> bool:
+    """TC20 – Tạo đơn mua hàng và xác nhận thành công"""
+    log_step(20, "TC20 – Tạo đơn mua hàng và xác nhận thành công")
     try:
         _ensure_logged_in(driver, wait)
         _go_to_purchase_list(driver, wait)
-        log_info("TC12: Navigation OK")
+        log_info("TC20: Navigation OK")
         _click_new_po(driver, wait)
-        log_info("TC12: New PO OK")
+        log_info("TC20: New PO OK")
         _select_first_vendor(driver, wait)
-        log_info("TC12: Vendor OK")
+        log_info("TC20: Vendor OK")
         _add_product_to_po(driver, wait)
-        log_info("TC12: Product OK")
+        log_info("TC20: Product OK")
         _fill_po_quantity(driver, wait)
-        log_info("TC12: Qty OK")
+        log_info("TC20: Qty OK")
         _click_confirm_order(driver, wait)
-        log_info("TC12: Confirm OK")
+        log_info("TC20: Confirm OK")
 
         status = get_status_badge(driver, wait)
         if not _po_is_confirmed(driver, wait):
-            log_err(f"TC12 FAIL: Trạng thái PO không đúng: '{status}'")
+            log_err(f"TC20 FAIL: Trạng thái PO không đúng: '{status}'")
             return False
 
         if not _receive_products_button_visible(driver):
-            log_err(f"TC12 FAIL: Không thấy nút Receive Products sau khi confirm.")
+            log_err(f"TC20 FAIL: Không thấy nút Receive Products sau khi confirm.")
             return False
 
-        log_ok(f"TC12 PASS: PO xác nhận thành công. Status: '{status}'. "
+        log_ok(f"TC20 PASS: PO xác nhận thành công. Status: '{status}'. "
                "Nút Receive Products hiển thị.")
         return True
     except Exception as e:
-        log_err(f"TC12 FAIL: {type(e).__name__}: {e}")
+        log_err(f"TC20 FAIL: {type(e).__name__}: {e}")
         return False
 
 
-def tc13_confirm_purchase_without_vendor(driver, wait) -> bool:
-    """TC13 – Tạo đơn mua – không chọn nhà cung cấp"""
-    log_step(13, "TC13 – Tạo đơn mua – không chọn nhà cung cấp")
+def tc21_confirm_purchase_without_vendor(driver, wait) -> bool:
+    """TC21 – Tạo đơn mua – không chọn nhà cung cấp"""
+    log_step(21, "TC21 – Tạo đơn mua – không chọn nhà cung cấp")
     try:
         _ensure_logged_in(driver, wait)
         _go_to_purchase_list(driver, wait)
@@ -398,19 +398,19 @@ def tc13_confirm_purchase_without_vendor(driver, wait) -> bool:
             has_error = not _po_is_confirmed(driver, wait)
 
         if has_error:
-            log_ok("TC13 PASS: Hệ thống chặn xác nhận khi không có NCC.")
+            log_ok("TC21 PASS: Hệ thống chặn xác nhận khi không có NCC.")
             return True
         else:
-            log_err("TC13 FAIL: PO xác nhận được dù không chọn NCC.")
+            log_err("TC21 FAIL: PO xác nhận được dù không chọn NCC.")
             return False
     except Exception as e:
-        log_err(f"TC13 FAIL: Lỗi không mong đợi – {e}")
+        log_err(f"TC21 FAIL: Lỗi không mong đợi – {e}")
         return False
 
 
-def tc14_receive_products_after_po(driver, wait) -> bool:
-    """TC14 – Nhập kho thành công sau khi xác nhận PO"""
-    log_step(14, "TC14 – Nhập kho thành công sau khi xác nhận PO")
+def tc22_receive_products_after_po(driver, wait) -> bool:
+    """TC22 – Nhập kho thành công sau khi xác nhận PO"""
+    log_step(22, "TC22 – Nhập kho thành công sau khi xác nhận PO")
     try:
         _ensure_logged_in(driver, wait)
         _go_to_purchase_list(driver, wait)
@@ -421,27 +421,26 @@ def tc14_receive_products_after_po(driver, wait) -> bool:
         _click_confirm_order(driver, wait)
 
         if not _po_is_confirmed(driver, wait):
-            log_err("TC14 FAIL: Không xác nhận được PO – không thể tiếp tục nhập kho.")
+            log_err("TC22 FAIL: Không xác nhận được PO – không thể tiếp tục nhập kho.")
             return False
 
         _validate_receipt(driver, wait)
 
         if _receipt_is_done(driver, wait):
-            log_ok("TC14 PASS: Phiếu nhập kho xác nhận thành công. Trạng thái: Done.")
+            log_ok("TC22 PASS: Phiếu nhập kho xác nhận thành công. Trạng thái: Done.")
             return True
 
-        # Odoo đôi khi không trả badge "Done" rõ ràng nếu popup đã xử lý xong
-        log_ok("TC14 PASS: Đã validate phiếu nhập kho (không đọc được badge Done, "
+        log_ok("TC22 PASS: Đã validate phiếu nhập kho (không đọc được badge Done, "
                "nhưng không có lỗi).")
         return True
     except Exception as e:
-        log_err(f"TC14 FAIL: Lỗi không mong đợi – {e}")
+        log_err(f"TC22 FAIL: Lỗi không mong đợi – {e}")
         return False
 
 
-def tc15_check_po_status_after_confirm(driver, wait) -> bool:
-    """TC15 – Kiểm tra trạng thái PO sau khi xác nhận"""
-    log_step(15, "TC15 – Kiểm tra trạng thái PO sau khi xác nhận")
+def tc23_check_po_status_after_confirm(driver, wait) -> bool:
+    """TC23 – Kiểm tra trạng thái PO sau khi xác nhận"""
+    log_step(23, "TC23 – Kiểm tra trạng thái PO sau khi xác nhận")
     try:
         _ensure_logged_in(driver, wait)
         _go_to_purchase_list(driver, wait)
@@ -453,18 +452,18 @@ def tc15_check_po_status_after_confirm(driver, wait) -> bool:
 
         status = get_status_badge(driver, wait)
         if not _po_is_confirmed(driver, wait):
-            log_err(f"TC15 FAIL: Status Bar không hiển thị 'Purchase Order'. "
+            log_err(f"TC23 FAIL: Status Bar không hiển thị 'Purchase Order'. "
                     f"Thực tế: '{status}'")
             return False
 
         if not _receive_products_button_visible(driver):
-            log_err(f"TC15 FAIL: Nút Receive Products không xuất hiện. Status: '{status}'")
+            log_err(f"TC23 FAIL: Nút Receive Products không xuất hiện. Status: '{status}'")
             return False
 
-        log_ok(f"TC15 PASS: Status Bar = '{status}'. Nút Receive Products hiển thị đúng.")
+        log_ok(f"TC23 PASS: Status Bar = '{status}'. Nút Receive Products hiển thị đúng.")
         return True
     except Exception as e:
-        log_err(f"TC15 FAIL: Lỗi không mong đợi – {e}")
+        log_err(f"TC23 FAIL: Lỗi không mong đợi – {e}")
         return False
 
 
@@ -508,14 +507,14 @@ def _read_product_stock(driver, wait) -> float:
         return -1.0
 
 
-def tc16_check_stock_after_receipt(driver, wait) -> bool:
-    """TC16 – Kiểm tra tồn kho tăng sau khi nhập kho"""
-    log_step(16, "TC16 – Kiểm tra tồn kho tăng sau khi nhập kho")
+def tc24_check_stock_after_receipt(driver, wait) -> bool:
+    """TC24 – Kiểm tra tồn kho tăng sau khi nhập kho"""
+    log_step(24, "TC24 – Kiểm tra tồn kho tăng sau khi nhập kho")
     try:
         _ensure_logged_in(driver, wait)
 
         stock_before = _read_product_stock(driver, wait)
-        log_info(f"TC16: Tồn kho trước nhập kho: {stock_before}")
+        log_info(f"TC24: Tồn kho trước nhập kho: {stock_before}")
 
         _go_to_purchase_list(driver, wait)
         _click_new_po(driver, wait)
@@ -525,101 +524,32 @@ def tc16_check_stock_after_receipt(driver, wait) -> bool:
         _click_confirm_order(driver, wait)
 
         if not _po_is_confirmed(driver, wait):
-            log_err("TC16 FAIL: Không xác nhận được PO.")
+            log_err("TC24 FAIL: Không xác nhận được PO.")
             return False
 
         _validate_receipt(driver, wait)
 
         stock_after = _read_product_stock(driver, wait)
-        log_info(f"TC16: Tồn kho sau nhập kho: {stock_after}")
+        log_info(f"TC24: Tồn kho sau nhập kho: {stock_after}")
 
         if stock_before < 0 or stock_after < 0:
-            log_err(f"TC16 FAIL: Không đọc được tồn kho (before={stock_before}, after={stock_after}).")
+            log_err(f"TC24 FAIL: Không đọc được tồn kho (before={stock_before}, after={stock_after}).")
             return False
 
         expected_increase = int(ORDER_QTY)
         actual_increase = stock_after - stock_before
         if abs(actual_increase - expected_increase) < 0.01:
-            log_ok(f"TC16 PASS: Tồn kho tăng đúng {expected_increase} đơn vị "
+            log_ok(f"TC24 PASS: Tồn kho tăng đúng {expected_increase} đơn vị "
                    f"({stock_before} → {stock_after}).")
             return True
         else:
-            log_err(f"TC16 FAIL: Tồn kho tăng {actual_increase}, expected {expected_increase} "
+            log_err(f"TC24 FAIL: Tồn kho tăng {actual_increase}, expected {expected_increase} "
                     f"({stock_before} → {stock_after}).")
             return False
     except Exception as e:
-        log_err(f"TC16 FAIL: Lỗi không mong đợi – {e}")
+        log_err(f"TC24 FAIL: Lỗi không mong đợi – {e}")
         return False
 
-
-def tc17_negative_quantity_in_po(driver, wait) -> bool:
-    """TC17 – Nhập số lượng âm vào đơn mua: Odoo có chặn hay không?"""
-    log_step(17, "TC17 – Nhập số lượng âm vào đơn mua")
-    try:
-        _ensure_logged_in(driver, wait)
-        _go_to_purchase_list(driver, wait)
-        _click_new_po(driver, wait)
-        _select_first_vendor(driver, wait)
-        _add_product_to_po(driver, wait)
-
-        # Điền số lượng âm
-        log_info("TC17: Điền số lượng -1...")
-        qty_field = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//td[@name='product_qty']//input")))
-        qty_field.click()
-        qty_field.send_keys(Keys.CONTROL + "a")
-        qty_field.send_keys("-1")
-        qty_field.send_keys(Keys.TAB)
-        time.sleep(2)
-
-        # Đọc lại giá trị sau khi blur để xem Odoo có tự sửa không
-        try:
-            qty_after = wait.until(EC.presence_of_element_located(
-                (By.XPATH, "//td[@name='product_qty']//input"))).get_attribute("value")
-        except Exception:
-            qty_after = "-1"
-        log_info(f"TC17: Giá trị qty sau khi nhập -1: '{qty_after}'")
-
-        # Thử xác nhận để xem Odoo có chặn không
-        _click_confirm_order(driver, wait)
-        time.sleep(2)
-
-        # Kiểm tra kết quả
-        blocked_by_error = False
-        try:
-            driver.find_element(By.XPATH,
-                "//div[contains(@class,'o_notification') and contains(@class,'danger')] | "
-                "//div[contains(@class,'o_dialog')]//div[contains(@class,'modal-body')] | "
-                "//div[contains(@class,'alert-danger')] | "
-                "//div[@role='alert']")
-            blocked_by_error = True
-        except Exception:
-            pass
-
-        confirmed = _po_is_confirmed(driver, wait)
-
-        try:
-            qty_val = float(qty_after.replace(",", ".").strip())
-            odoo_auto_corrected = qty_val > 0
-        except ValueError:
-            odoo_auto_corrected = False
-
-        if odoo_auto_corrected:
-            log_ok(f"TC17 PASS (INFO): Odoo tự sửa qty âm thành {qty_after} — không cho phép giá trị âm.")
-            return True
-        if blocked_by_error:
-            log_ok("TC17 PASS (INFO): Odoo chặn xác nhận khi qty âm — có validation.")
-            return True
-        if confirmed:
-            log_ok("TC17 PASS (WARN): Odoo cho phép PO với qty âm (-1) — KHÔNG có validation số âm. "
-                   "Cần xem xét thêm.")
-            return True
-
-        log_ok("TC17 PASS (INFO): PO không xác nhận được với qty âm.")
-        return True
-    except Exception as e:
-        log_err(f"TC17 FAIL: Lỗi không mong đợi – {e}")
-        return False
 
 
 def _create_product_api() -> bool:
@@ -710,23 +640,22 @@ def _create_product_api() -> bool:
 
 
 def run_purchase_suite(driver, wait, selected_tcs: list[str] | None = None):
-    """Chạy Suite 3.1 – Mua hàng. selected_tcs=None → chạy tất cả TC12-TC17."""
+    """Chạy Suite 3.1 – Mua hàng (TC20–TC24)."""
     print("\n" + "=" * 60)
     print("  SUITE 3.1 – MUA HÀNG")
     print("=" * 60)
 
     _ALL_TCS = {
-        "TC12": tc12_create_and_confirm_purchase,
-        "TC13": tc13_confirm_purchase_without_vendor,
-        "TC14": tc14_receive_products_after_po,
-        "TC15": tc15_check_po_status_after_confirm,
-        "TC16": tc16_check_stock_after_receipt,
-        "TC17": tc17_negative_quantity_in_po,
+        "TC20": tc20_create_and_confirm_purchase,
+        "TC21": tc21_confirm_purchase_without_vendor,
+        "TC22": tc22_receive_products_after_po,
+        "TC23": tc23_check_po_status_after_confirm,
+        "TC24": tc24_check_stock_after_receipt,
     }
     to_run = selected_tcs if selected_tcs else list(_ALL_TCS.keys())
 
-    # TC13 không dùng sản phẩm; các TC còn lại cần product được tạo sẵn
-    needs_product = any(tc != "TC13" for tc in to_run)
+    # TC21 không dùng sản phẩm; các TC còn lại cần product được tạo sẵn
+    needs_product = any(tc != "TC21" for tc in to_run)
     if needs_product:
         log_info("Tạo sản phẩm test trước khi chạy suite Mua hàng...")
         try:

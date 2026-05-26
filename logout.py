@@ -53,7 +53,7 @@ def tc06_logout_success(driver, wait):
     _ensure_logged_in(driver, wait)
     _do_logout(driver, wait)
 
-    if "/odoo" not in driver.current_url:
+    if "/web/login" in driver.current_url:
         log_ok(f"TC06 PASS: Đăng xuất thành công. URL: {driver.current_url}")
         return True
     else:
@@ -87,13 +87,13 @@ def tc08_back_button_after_logout(driver, wait):
     driver.back()
     time.sleep(2)
 
-    still_protected = "/odoo" in driver.current_url
-    if still_protected:
+    still_on_odoo = "/odoo" in driver.current_url
+    if still_on_odoo:
         driver.refresh()
         time.sleep(2)
-        still_protected = "/odoo" in driver.current_url
+        still_on_odoo = "/odoo" in driver.current_url
 
-    if not still_protected:
+    if not still_on_odoo:
         log_ok(f"TC08 PASS: Back button không vào được dashboard. URL: {driver.current_url}")
         return True
     else:

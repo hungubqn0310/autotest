@@ -102,7 +102,7 @@ def tc02_login_wrong_password(driver, wait):
     """TC02 – Đăng nhập thất bại – sai mật khẩu"""
     log_step(2, "TC02 – Sai mật khẩu")
     _go_to_login(driver)
-    _fill_login_form(driver, wait, "admin@gmail.com", "wrong123")
+    _fill_login_form(driver, wait, ODOO_USER, "wrong123")
     _click_login(driver, wait)
 
     error_msg = _get_error_message(driver)
