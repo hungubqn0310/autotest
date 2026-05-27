@@ -15,7 +15,7 @@ _LOGIN_URL = f"{_parsed.scheme}://{_parsed.netloc}/web/login"
 
 def _go_to_login(driver):
     driver.get(_LOGIN_URL)
-    time.sleep(2)
+    time.sleep(4)
 
 
 def _fill_login_form(driver, wait, email, password):
@@ -24,17 +24,19 @@ def _fill_login_form(driver, wait, email, password):
     email_input.clear()
     if email:
         email_input.send_keys(email)
+    time.sleep(1)
 
     password_input = wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@id='password']")))
     password_input.clear()
     if password:
         password_input.send_keys(password)
+    time.sleep(1)
 
 
 def _click_login(driver, wait):
     # Support both English "Log in" and Vietnamese "Đăng nhập"
     safe_click(driver, wait, "//button[normalize-space()='Đăng nhập' or normalize-space()='Log in']")
-    time.sleep(2)
+    time.sleep(4)
 
 
 def _get_error_message(driver):

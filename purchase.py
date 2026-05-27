@@ -340,6 +340,7 @@ def tc20_create_and_confirm_purchase(driver, wait) -> bool:
     log_step(20, "TC20 – Tạo đơn mua hàng và xác nhận thành công")
     try:
         _ensure_logged_in(driver, wait)
+        time.sleep(1)
         _go_to_purchase_list(driver, wait)
         log_info("TC20: Navigation OK")
         _click_new_po(driver, wait)
@@ -375,6 +376,7 @@ def tc21_confirm_purchase_without_vendor(driver, wait) -> bool:
     log_step(21, "TC21 – Tạo đơn mua – không chọn nhà cung cấp")
     try:
         _ensure_logged_in(driver, wait)
+        time.sleep(1)
         _go_to_purchase_list(driver, wait)
         _click_new_po(driver, wait)
         # Không chọn vendor, thử xác nhận ngay (không thêm sản phẩm)
@@ -425,6 +427,7 @@ def tc22_receive_products_after_po(driver, wait) -> bool:
             return False
 
         _validate_receipt(driver, wait)
+        time.sleep(1)
 
         if _receipt_is_done(driver, wait):
             log_ok("TC22 PASS: Phiếu nhập kho xác nhận thành công. Trạng thái: Done.")
@@ -443,6 +446,7 @@ def tc23_check_po_status_after_confirm(driver, wait) -> bool:
     log_step(23, "TC23 – Kiểm tra trạng thái PO sau khi xác nhận")
     try:
         _ensure_logged_in(driver, wait)
+        time.sleep(1)
         _go_to_purchase_list(driver, wait)
         _click_new_po(driver, wait)
         _select_first_vendor(driver, wait)
@@ -512,6 +516,7 @@ def tc24_check_stock_after_receipt(driver, wait) -> bool:
     log_step(24, "TC24 – Kiểm tra tồn kho tăng sau khi nhập kho")
     try:
         _ensure_logged_in(driver, wait)
+        time.sleep(1)
 
         stock_before = _read_product_stock(driver, wait)
         log_info(f"TC24: Tồn kho trước nhập kho: {stock_before}")
@@ -528,6 +533,7 @@ def tc24_check_stock_after_receipt(driver, wait) -> bool:
             return False
 
         _validate_receipt(driver, wait)
+        time.sleep(1)
 
         stock_after = _read_product_stock(driver, wait)
         log_info(f"TC24: Tồn kho sau nhập kho: {stock_after}")

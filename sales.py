@@ -258,6 +258,7 @@ def tc25_create_new_so(driver, wait):
     """TC25 – Tạo SO mới"""
     log_step(25, "TC25 – Tạo SO mới")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     _go_to_sales_orders(driver, wait)
     _click_new_so(driver, wait)
@@ -277,6 +278,7 @@ def tc26_select_customer(driver, wait):
     """TC26 – Chọn khách hàng cho SO"""
     log_step(26, "TC26 – Chọn khách hàng cho SO")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     if "sales" not in driver.current_url or _is_so_confirmed(driver):
         _go_to_sales_orders(driver, wait)
@@ -300,6 +302,7 @@ def tc27_add_product(driver, wait):
     """TC27 – Thêm sản phẩm vào SO"""
     log_step(27, "TC27 – Thêm sản phẩm vào SO")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     if "sales" not in driver.current_url or _is_so_confirmed(driver):
         _go_to_sales_orders(driver, wait)
@@ -322,6 +325,7 @@ def tc28_fill_quantity(driver, wait):
     """TC28 – Nhập số lượng sản phẩm"""
     log_step(28, "TC28 – Nhập số lượng sản phẩm")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     if "sales" not in driver.current_url or _is_so_confirmed(driver):
         _go_to_sales_orders(driver, wait)
@@ -354,6 +358,7 @@ def tc29_confirm_without_customer(driver, wait):
     """TC29 – Confirm SO khi thiếu khách hàng"""
     log_step(29, "TC29 – Confirm SO khi thiếu khách hàng")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     _go_to_sales_orders(driver, wait)
     _click_new_so(driver, wait)
@@ -403,6 +408,7 @@ def tc30_confirm_so(driver, wait):
     """TC30 – Confirm SO thành công"""
     log_step(30, "TC30 – Confirm SO thành công")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     try:
         _go_to_sales_orders(driver, wait)
@@ -439,6 +445,7 @@ def tc31_open_delivery(driver, wait):
     """TC31 – Mở phiếu Delivery từ SO"""
     log_step(31, "TC31 – Mở phiếu Delivery từ SO")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     try:
         # Đảm bảo có SO đã confirm
@@ -469,6 +476,7 @@ def tc32_check_demand_qty(driver, wait):
     """TC32 – Kiểm tra số lượng cần giao"""
     log_step(32, "TC32 – Kiểm tra số lượng cần giao")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     try:
         _setup_delivery(driver, wait)
     except Exception as e:
@@ -517,6 +525,7 @@ def tc33_validate_delivery(driver, wait):
     """TC33 – Validate Delivery thành công"""
     log_step(33, "TC33 – Validate Delivery thành công")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     _setup_delivery(driver, wait)
 
     try:
@@ -555,6 +564,7 @@ def tc34_check_stock_after_delivery(driver, wait):
     """TC34 – Kiểm tra tồn kho sau xuất kho"""
     log_step(34, "TC34 – Kiểm tra tồn kho sau xuất kho")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     from product import _go_to_product_list, _parse_price
 

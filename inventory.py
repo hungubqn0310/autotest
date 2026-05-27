@@ -33,14 +33,19 @@ def tc18_update_inventory(driver, wait):
     """TC18 – Cập nhật số lượng tồn kho thành công"""
     log_step(18, "TC18 – Cập nhật số lượng tồn kho thành công")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
     log_info(f"Tạo sản phẩm: {name}")
 
     _go_to_product_list(driver, wait)
+    time.sleep(1.5)
     _click_new(driver, wait)
+    time.sleep(1)
     _fill_name(driver, wait, name)
+    time.sleep(0.5)
     _enable_track_inventory(driver)
+    time.sleep(1)
 
     try:
         qty_field = WebDriverWait(driver, 6).until(EC.element_to_be_clickable(
@@ -52,6 +57,7 @@ def tc18_update_inventory(driver, wait):
              "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
              "/..//input")))
         qty_field.click()
+        time.sleep(0.3)
         qty_field.send_keys(Keys.CONTROL + "a")
         qty_field.send_keys(PRODUCT_QTY)
         time.sleep(0.5)
@@ -61,7 +67,9 @@ def tc18_update_inventory(driver, wait):
         return False
 
     _fill_price(driver, wait, PRODUCT_PRICE)
+    time.sleep(0.5)
     _click_save(driver, wait)
+    time.sleep(1)
 
     if not _is_saved(driver):
         log_err(f"TC18 FAIL: Không lưu được sản phẩm. URL: {driver.current_url}")
@@ -121,12 +129,13 @@ def tc19_search_product(driver, wait):
     """TC19 – Tìm kiếm sản phẩm đã tạo"""
     log_step(19, "TC19 – Tìm kiếm sản phẩm đã tạo")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     search_name = _suite_product.get("name") or "SP_TEST_"
     log_info(f"Tìm kiếm: '{search_name}'")
 
     _go_to_product_list(driver, wait)
-    time.sleep(1)
+    time.sleep(1.5)
 
     try:
         for _ in range(5):
@@ -139,17 +148,23 @@ def tc19_search_product(driver, wait):
     except Exception:
         pass
 
+    time.sleep(0.5)
+
     try:
         search_input = WebDriverWait(driver, 8).until(EC.element_to_be_clickable(
             (By.XPATH, "//input[contains(@class,'o_searchview_input')]")))
         search_input.click()
+        time.sleep(0.3)
         search_input.send_keys(Keys.CONTROL + "a")
         search_input.send_keys(search_name)
+        time.sleep(0.5)
         search_input.send_keys(Keys.ENTER)
         time.sleep(2)
     except Exception as e:
         log_err(f"TC19 FAIL: Không tìm thấy ô search – {e}")
         return False
+
+    time.sleep(1)
 
     try:
         cards = driver.find_elements(

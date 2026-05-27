@@ -51,6 +51,7 @@ def tc06_logout_success(driver, wait):
     """TC06 – Đăng xuất thành công"""
     log_step(6, "TC06 – Đăng xuất thành công")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     _do_logout(driver, wait)
 
     if "/web/login" in driver.current_url:
@@ -65,6 +66,7 @@ def tc07_session_invalidated_after_logout(driver, wait):
     """TC07 – Sau logout, truy cập /odoo trực tiếp phải bị redirect về login"""
     log_step(7, "TC07 – Session bị hủy sau logout")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     _do_logout(driver, wait)
 
     driver.get(f"{_BASE_URL}/odoo")
@@ -82,6 +84,7 @@ def tc08_back_button_after_logout(driver, wait):
     """TC08 – Nhấn Back sau logout không quay lại được dashboard"""
     log_step(8, "TC08 – Back button sau logout")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     _do_logout(driver, wait)
 
     driver.back()
@@ -105,9 +108,11 @@ def tc09_relogin_after_logout(driver, wait):
     """TC09 – Đăng nhập lại thành công sau khi logout"""
     log_step(9, "TC09 – Đăng nhập lại sau logout")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
     _do_logout(driver, wait)
 
     login(driver, wait)
+    time.sleep(1)
 
     if "/odoo" in driver.current_url:
         log_ok("TC09 PASS: Đăng nhập lại thành công sau logout")

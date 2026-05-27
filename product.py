@@ -217,6 +217,7 @@ def tc10_create_product_success(driver, wait):
     """TC10 – Tạo sản phẩm mới thành công"""
     log_step(10, "TC10 – Tạo sản phẩm mới thành công")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
     log_info(f"Tên: {name} | Giá: {PRODUCT_PRICE}")
@@ -240,6 +241,7 @@ def tc11_create_product_empty_name(driver, wait):
     """TC11 – Tạo sản phẩm – để trống tên"""
     log_step(11, "TC11 – Tạo sản phẩm – để trống tên")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     _go_to_product_list(driver, wait)
     _click_new(driver, wait)
@@ -262,6 +264,7 @@ def tc12_create_product_valid_price(driver, wait):
     """TC12 – Tạo sản phẩm – điền giá bán hợp lệ"""
     log_step(12, "TC12 – Tạo sản phẩm – điền giá bán hợp lệ")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = f"SP_TEST_{datetime.datetime.now().strftime('%d%m%Y_%H%M%S')}"
     log_info(f"Tên: {name} | Giá: {PRODUCT_PRICE}")
@@ -299,6 +302,7 @@ def tc13_create_product_zero_price(driver, wait):
     """TC13 – Tạo sản phẩm – nhập giá bằng 0"""
     log_step(13, "TC13 – Tạo sản phẩm – nhập giá bằng 0")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = "SP_TEST_FREE"
     log_info(f"Tên: {name} | Giá: 0")
@@ -330,6 +334,7 @@ def tc14_create_product_special_chars(driver, wait):
     """TC14 – Tạo sản phẩm – nhập ký tự đặc biệt vào tên"""
     log_step(14, "TC14 – Tạo sản phẩm – nhập ký tự đặc biệt vào tên")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = "SP_@#$%"
     log_info(f"Tên: {name} | Giá: {PRODUCT_PRICE}")
@@ -357,6 +362,7 @@ def tc15_create_product_duplicate_name(driver, wait):
     """TC15 – Tạo sản phẩm – nhập tên trùng"""
     log_step(15, "TC15 – Tạo sản phẩm – nhập tên trùng")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = "SP_TEST_DUPLICATE"
     log_info(f"Tên: {name} | Giá: {PRODUCT_PRICE}")
@@ -371,6 +377,7 @@ def tc15_create_product_duplicate_name(driver, wait):
         log_err(f"TC15 FAIL: Không tạo được sản phẩm lần đầu. URL: {driver.current_url}")
         return False
 
+    time.sleep(1)
     log_info("Tạo lần 2 với tên trùng...")
     _go_to_product_list(driver, wait)
     _click_new(driver, wait)
@@ -399,6 +406,7 @@ def tc16_refresh_after_save(driver, wait):
     """TC16 – Kiểm tra refresh sau khi lưu"""
     log_step(16, "TC16 – Kiểm tra refresh sau khi lưu")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = "SP_REFRESH"
     log_info(f"Tên: {name} | Giá: {PRODUCT_PRICE}")
@@ -443,6 +451,7 @@ def tc17_search_product_after_create(driver, wait):
     """TC17 – Kiểm tra tìm kiếm sản phẩm sau khi tạo"""
     log_step(17, "TC17 – Kiểm tra tìm kiếm sản phẩm sau khi tạo")
     _ensure_logged_in(driver, wait)
+    time.sleep(1)
 
     name = "SP_SEARCH"
     log_info(f"Tạo sản phẩm: {name}")
