@@ -38,7 +38,7 @@ def _win_activate_new_chrome(before: set, retries: int = 8) -> None:
         new = _win_chrome_hwnds() - before
         if new:
             hwnd = next(iter(new))
-            ctypes.windll.user32.ShowWindow(hwnd, 9)          # SW_RESTORE
+            ctypes.windll.user32.ShowWindow(hwnd, 3)          # SW_MAXIMIZE
             # Trick: giả lập nhấn Alt để lấy foreground lock, sau đó set foreground
             ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
             ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
