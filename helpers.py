@@ -20,9 +20,10 @@ def setup_driver():
     options.add_argument("--start-maximized")
 
     driver_path = ChromeDriverManager().install()
-    # webdriver-manager đôi khi trả về THIRD_PARTY_NOTICES thay vì exe
-    if not driver_path.endswith(".exe"):
-        driver_path = os.path.join(os.path.dirname(driver_path), "chromedriver.exe")
+    # webdriver-manager đôi khi trả về THIRD_PARTY_NOTICES thay vì binary thực
+    binary_name = "chromedriver.exe" if os.name == "nt" else "chromedriver"
+    if not driver_path.endswith(binary_name):
+        driver_path = os.path.join(os.path.dirname(driver_path), binary_name)
 
     service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
