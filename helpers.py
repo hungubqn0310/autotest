@@ -2,6 +2,7 @@
 Các hàm tiện ích cho Odoo Automation
 """
 import os
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -9,6 +10,40 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 import time
+
+
+def _win_chrome_hwnds() -> set:
+    """Trả về tập hợp HWND của tất cả cửa sổ Chrome đang mở (Windows only)."""
+    import ctypes
+    from ctypes import wintypes
+    hwnds: set = set()
+
+    def _cb(hwnd, _):
+        buf = ctypes.create_unicode_buffer(64)
+        ctypes.windll.user32.GetClassNameW(hwnd, buf, 64)
+        if buf.value == "Chrome_WidgetWin_1":
+            hwnds.add(hwnd)
+        return True
+
+    cb_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    ctypes.windll.user32.EnumWindows(cb_type(_cb), 0)
+    return hwnds
+
+
+def _win_activate_new_chrome(before: set, retries: int = 8) -> None:
+    """Chờ Chrome mới xuất hiện rồi đưa lên foreground (Windows only)."""
+    import ctypes
+    for _ in range(retries):
+        time.sleep(0.5)
+        new = _win_chrome_hwnds() - before
+        if new:
+            hwnd = next(iter(new))
+            ctypes.windll.user32.ShowWindow(hwnd, 9)          # SW_RESTORE
+            # Trick: giả lập nhấn Alt để lấy foreground lock, sau đó set foreground
+            ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
+            ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            return
 
 
 def setup_driver():
@@ -26,7 +61,16 @@ def setup_driver():
         driver_path = os.path.join(os.path.dirname(driver_path), binary_name)
 
     service = Service(driver_path)
+
+    # Snapshot các Chrome window hiện có trước khi Selenium mở thêm (Windows)
+    before = _win_chrome_hwnds() if os.name == "nt" else set()
+
     driver = webdriver.Chrome(service=service, options=options)
+
+    # Đưa Chrome window mới lên foreground (Windows only; Linux đã tự lên)
+    if os.name == "nt":
+        _win_activate_new_chrome(before)
+
     return driver
 
 
