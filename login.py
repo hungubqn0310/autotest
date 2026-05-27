@@ -114,7 +114,7 @@ def tc02_login_wrong_password(driver, wait):
         log_ok(f"TC02 PASS: Hiển thị lỗi đúng – \"{error_msg}\"")
         return True
     elif still_on_login:
-        log_info(f"TC02 PASS (partial): Không đăng nhập được. Thông báo: \"{error_msg}\"")
+        log_ok(f"TC02 PASS (partial): Không đăng nhập được. Thông báo: \"{error_msg}\"")
         return True
     else:
         log_err("TC02 FAIL: Đăng nhập thành công bất ngờ với mật khẩu sai")
