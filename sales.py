@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
-from config import ODOO_URL, PRODUCT_NAME, ORDER_QTY
+from config import ODOO_URL, PRODUCT_NAME, ORDER_QTY, PRODUCT_QTY, PRODUCT_PRICE
 from helpers import (log_step, log_info, log_ok, log_err, safe_click,
                      wait_for_toast_gone, dismiss_popup_if_any)
 from login import login
@@ -25,6 +25,8 @@ _SALES_URLS = [
 _suite_state: dict = {
     "so_url": None,
     "delivery_url": None,
+    "product_url": None,
+    "product_name": None,
 }
 
 
@@ -209,9 +211,73 @@ def _get_delivery_status(driver, wait):
         return ""
 
 
+def _create_product_with_stock(driver, wait):
+    """Tạo product có Track Inventory + On Hand = PRODUCT_QTY trước khi bán.
+    Lưu URL vào _suite_state để TC34 navigate trực tiếp."""
+    if _suite_state.get("product_url"):
+        return
+    from product import (_go_to_product_list, _click_new, _fill_name,
+                         _fill_price, _click_save, _is_saved,
+                         _enable_track_inventory)
+    log_info(f"Tạo product có track inventory: {PRODUCT_NAME} (stock={PRODUCT_QTY})")
+
+    _go_to_product_list(driver, wait)
+    time.sleep(1.5)
+    _click_new(driver, wait)
+    time.sleep(1)
+    _fill_name(driver, wait, PRODUCT_NAME)
+    time.sleep(0.5)
+    _enable_track_inventory(driver)
+    time.sleep(1)
+
+    try:
+        qty_field = WebDriverWait(driver, 6).until(EC.element_to_be_clickable(
+            (By.XPATH,
+             "//div[@name='qty_available']//input | "
+             "//input[@id='qty_available_0'] | "
+             "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
+             "/following-sibling::div//input | "
+             "//label[contains(.,'Số lượng hiện có') or contains(.,'On Hand')]"
+             "/..//input")))
+        qty_field.click()
+        time.sleep(0.3)
+        qty_field.send_keys(Keys.CONTROL + "a")
+        qty_field.send_keys(PRODUCT_QTY)
+        time.sleep(0.5)
+    except Exception as e:
+        log_err(f"Không điền được On Hand: {e}")
+
+    _fill_price(driver, wait, PRODUCT_PRICE)
+    time.sleep(0.5)
+    _click_save(driver, wait)
+    time.sleep(2)
+
+    # Confirm modal "Apply" cho stock change (nếu có)
+    try:
+        confirm = WebDriverWait(driver, 4).until(EC.element_to_be_clickable(
+            (By.XPATH,
+             "//div[contains(@class,'modal')]//button["
+             "contains(.,'OK') or contains(.,'Áp dụng') or "
+             "contains(.,'Apply') or contains(.,'Xác nhận')]")))
+        confirm.click()
+        time.sleep(1.5)
+        wait_for_toast_gone(wait)
+    except Exception:
+        pass
+
+    if not _is_saved(driver):
+        log_err(f"Không lưu được product. URL: {driver.current_url}")
+        return
+
+    _suite_state["product_url"] = driver.current_url
+    _suite_state["product_name"] = PRODUCT_NAME
+    log_info(f"Đã tạo product: {driver.current_url}")
+
+
 def _setup_confirmed_so(driver, wait):
     """Tạo SO đầy đủ và confirm – dùng cho TC31-TC34 khi chạy độc lập."""
     _ensure_logged_in(driver, wait)
+    _create_product_with_stock(driver, wait)
     _go_to_sales_orders(driver, wait)
     _click_new_so(driver, wait)
     _select_first_customer(driver, wait)
@@ -560,6 +626,70 @@ def tc33_validate_delivery(driver, wait):
         return False
 
 
+def _tc34_verify_on_hand(driver, wait, _parse_price):
+    """Đọc On Hand strict từ product form và validate với expected (PRODUCT_QTY - ORDER_QTY).
+    FAIL nếu không tìm được On Hand thật (tránh false positive khi product không track inventory)."""
+    expected = _parse_price(PRODUCT_QTY) - _parse_price(ORDER_QTY)
+    on_hand = None
+    source = None
+
+    # 1) Đọc field qty_available trên form (chính xác nhất)
+    try:
+        el = driver.find_element(By.XPATH,
+            "//div[@name='qty_available']//input | "
+            "//input[@id='qty_available_0'] | "
+            "//div[@name='qty_available']//span")
+        val_str = (el.get_attribute("value") or el.text or "").strip()
+        if val_str:
+            on_hand = _parse_price(val_str)
+            source = "qty_available field"
+    except Exception:
+        pass
+
+    # 2) Stat button "Hiện có"/"On Hand" (action_open_quants)
+    if on_hand is None:
+        for xpath in [
+            "//button[@name='action_open_quants']",
+            "//button[contains(@class,'oe_stat_button')"
+            " and (contains(.,'Hiện có') or contains(.,'On Hand'))]",
+        ]:
+            try:
+                stat = driver.find_element(By.XPATH, xpath)
+                nums = re.findall(r'[\d.,]+', stat.text)
+                for n in nums:
+                    v = _parse_price(n)
+                    if v >= 0:
+                        on_hand = v
+                        source = f"stat button '{stat.text.strip()[:30]}'"
+                        break
+                if on_hand is not None:
+                    break
+            except Exception:
+                continue
+
+    if on_hand is None:
+        # Check xem track inventory có bật không – báo lỗi rõ ràng
+        try:
+            tracked = driver.find_element(By.XPATH,
+                "//input[@id='is_storable_0'] | //div[@name='is_storable']//input")
+            if not tracked.is_selected():
+                log_err("TC34 FAIL: Product KHÔNG bật Track Inventory → "
+                        "không có On Hand để check. Setup sai.")
+                return False
+        except Exception:
+            pass
+        log_err("TC34 FAIL: Không đọc được On Hand từ form sản phẩm")
+        return False
+
+    log_info(f"[TC34] On Hand đọc được = {on_hand} (từ {source}). Expected = {expected}")
+    if abs(on_hand - expected) < 0.01:
+        log_ok(f"TC34 PASS: On Hand = {on_hand} = {PRODUCT_QTY} - {ORDER_QTY} (đúng kỳ vọng)")
+        return True
+    log_err(f"TC34 FAIL: On Hand = {on_hand}, expected {expected} "
+            f"({PRODUCT_QTY} - {ORDER_QTY}). Tồn kho không giảm đúng.")
+    return False
+
+
 def tc34_check_stock_after_delivery(driver, wait):
     """TC34 – Kiểm tra tồn kho sau xuất kho"""
     log_step(34, "TC34 – Kiểm tra tồn kho sau xuất kho")
@@ -567,6 +697,14 @@ def tc34_check_stock_after_delivery(driver, wait):
     time.sleep(1)
 
     from product import _go_to_product_list, _parse_price
+
+    # Ưu tiên navigate trực tiếp tới product URL đã lưu (tạo bởi _create_product_with_stock)
+    if _suite_state.get("product_url"):
+        log_info(f"[TC34] Navigate trực tiếp tới product: {_suite_state['product_url']}")
+        driver.get(_suite_state["product_url"])
+        time.sleep(2.5)
+        # Skip phần search/click, nhảy thẳng tới đọc tồn kho
+        return _tc34_verify_on_hand(driver, wait, _parse_price)
 
     _go_to_product_list(driver, wait)
     time.sleep(2)
@@ -610,7 +748,24 @@ def tc34_check_stock_after_delivery(driver, wait):
     if _suite_state.get("product_name"):
         search_terms = [_suite_state["product_name"]] + search_terms
 
-    found_results = False
+    def _real_rows():
+        """Trả về list record thật (loại ghost, chỉ visible).
+        Odoo 17: real kanban record là <article>, ghost là <div>."""
+        els = driver.find_elements(By.XPATH,
+            "//tr[contains(@class,'o_data_row')] | "
+            "//article[contains(@class,'o_kanban_record')] | "
+            "//div[contains(@class,'o_kanban_record') "
+            "and not(contains(@class,'o_kanban_ghost'))]")
+        out = []
+        for e in els:
+            try:
+                if e.is_displayed() and e.size.get('height', 0) > 0:
+                    out.append(e)
+            except Exception:
+                pass
+        return out
+
+    real_rows = []
     for term in search_terms:
         # Xóa filter cũ trước khi search
         try:
@@ -624,85 +779,104 @@ def tc34_check_stock_after_delivery(driver, wait):
             pass
         if not _do_search(term):
             continue
-        rows = driver.find_elements(By.XPATH,
+        all_rows = driver.find_elements(By.XPATH,
             "//tr[contains(@class,'o_data_row')] | //div[contains(@class,'o_kanban_record')]")
-        if rows:
-            found_results = True
-            log_info(f"[TC34] Tìm sản phẩm với '{term}' → {len(rows)} kết quả")
+        real_rows = _real_rows()
+        log_info(f"[TC34] Search '{term}' → {len(all_rows)} elements, "
+                 f"{len(real_rows)} record thật")
+        if real_rows:
             break
-        log_info(f"[TC34] Không tìm thấy với '{term}', thử tiếp...")
+        log_info(f"[TC34] Không có record thật với '{term}', thử tiếp...")
 
-    if not found_results:
-        log_err("TC34 FAIL: Không tìm thấy sản phẩm nào trong danh sách")
+    if not real_rows:
+        log_err(f"TC34 FAIL: Không tìm thấy sản phẩm thật trong danh sách. "
+                f"Có thể product '{PRODUCT_NAME}' không tồn tại trong Inventory "
+                f"(consumable không track), hoặc bị filter mặc định ẩn.")
         return False
 
-    # Mở sản phẩm đầu tiên – thử nhiều cách
+    # Mở sản phẩm đầu tiên – thử nhiều chiến lược
+    from selenium.webdriver.common.action_chains import ActionChains
+
     opened = False
-    for xpath in [
-        "//tr[contains(@class,'o_data_row')][1]//td[@name='name']",
-        "//tr[contains(@class,'o_data_row')][1]",
-        "//div[contains(@class,'o_kanban_record')][1]//span[contains(@class,'o_kanban_record_title')]",
-        "//div[contains(@class,'o_kanban_record')][1]",
-    ]:
-        try:
-            el = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
-            driver.execute_script("arguments[0].click();", el)
-            time.sleep(2)
-            opened = True
+    url_before = driver.current_url
+
+    # CHIẾN LƯỢC 1: tìm element chứa text tên sản phẩm (không phụ thuộc class).
+    # Dựa vào screenshot, card kanban CHẮC CHẮN có text PRODUCT_NAME hiển thị.
+    text_targets = []
+    for term in [PRODUCT_NAME, "SP_TEST"]:
+        els = driver.find_elements(By.XPATH,
+            f"//*[contains(normalize-space(text()),'{term}')]")
+        for e in els:
+            try:
+                if e.is_displayed() and e.size.get('height', 0) > 0:
+                    text_targets.append(e)
+            except Exception:
+                pass
+        if text_targets:
             break
+
+    # CHIẾN LƯỢC 2: fallback dùng row/card classes nếu tìm theo text fail
+    if not text_targets:
+        candidates = driver.find_elements(By.XPATH,
+            "//tr[contains(@class,'o_data_row')] | "
+            "//div[contains(@class,'o_kanban_record') "
+            "and not(contains(@class,'o_kanban_ghost'))] | "
+            "//article[contains(@class,'o_kanban_record')] | "
+            "//div[contains(@class,'oe_kanban_card')]")
+        text_targets = [r for r in candidates if r.is_displayed()
+                        and r.size.get('height', 0) > 0]
+
+    log_info(f"[TC34] Có {len(text_targets)} click target visible")
+
+    if not text_targets:
+        # Diagnostic: dump tất cả class names visible để debug
+        try:
+            sample = driver.execute_script(
+                "return Array.from(document.querySelectorAll("
+                "'div,article,tr')).filter(e=>e.offsetParent && "
+                "(e.className||'').toString().toLowerCase().includes('kanban'))"
+                ".slice(0,10).map(e=>e.className).join('|');")
+            log_info(f"[TC34] DEBUG kanban classes visible: {sample}")
         except Exception:
             pass
-    if not opened:
-        log_err("TC34 FAIL: Không mở được sản phẩm – không click được kết quả")
-        return False
 
-    # Đọc tồn kho từ stat button
-    try:
-        # Ưu tiên nút On Hand (action_open_quants) hoặc stock moves
-        stat = None
-        for xpath in [
-            "//button[@name='action_open_quants']",
-            "//button[@name='action_view_stock_move_lines']",
-            "//button[contains(@class,'oe_stat_button') and "
-            "(contains(.,'Hiện có') or contains(.,'On Hand') or contains(.,'Tồn') or "
-            "contains(.,'Đang có') or contains(.,'Units'))]",
-            "//a[contains(@class,'oe_stat_button') and "
-            "(contains(.,'Hiện có') or contains(.,'On Hand') or contains(.,'Tồn'))]",
-            # fallback: bất kỳ stat button nào có số (bỏ qua nút "Trang web" v.v.)
-            "//button[contains(@class,'oe_stat_button') and "
-            "not(contains(.,'Trang web')) and not(contains(.,'Website'))][1]",
-            "//button[contains(@class,'oe_stat_button')][1]",
-        ]:
+    for target in text_targets[:5]:
+        try:
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block:'center'});", target)
+            time.sleep(0.3)
+        except Exception:
+            pass
+
+        for strategy in ("actionchains", "selenium", "js", "dblclick"):
             try:
-                stat = driver.find_element(By.XPATH, xpath)
+                if strategy == "actionchains":
+                    ActionChains(driver).move_to_element(target)\
+                        .pause(0.2).click().perform()
+                elif strategy == "selenium":
+                    target.click()
+                elif strategy == "js":
+                    driver.execute_script("arguments[0].click();", target)
+                elif strategy == "dblclick":
+                    ActionChains(driver).double_click(target).perform()
+            except Exception:
+                continue
+            time.sleep(1.5)
+            if (driver.current_url != url_before
+                    or driver.find_elements(By.XPATH,
+                        "//div[contains(@class,'o_form_view')]")):
+                opened = True
                 break
-            except Exception:
-                pass
+        if opened:
+            break
 
-        if stat is None:
-            log_err("TC34 FAIL: Không tìm thấy stat button tồn kho")
-            return False
-
-        stat_text = stat.text.strip()
-        nums = re.findall(r'[\d.,]+', stat_text)
-        on_hand = None
-        for n in nums:
-            try:
-                v = _parse_price(n)
-                if v >= 0:
-                    on_hand = v
-                    break
-            except Exception:
-                pass
-
-        if on_hand is not None:
-            log_ok(f"TC34 PASS: Tồn kho = {on_hand} (đã xuất {ORDER_QTY} đơn vị). URL: {driver.current_url}")
-        else:
-            log_ok(f"TC34 PASS: Stat button = '{stat_text}' (đã xuất {ORDER_QTY} đơn vị)")
-        return True
-    except Exception as e:
-        log_err(f"TC34 FAIL: Lỗi khi đọc stat button – {e}")
+    if not opened:
+        log_err(f"TC34 FAIL: Không mở được sản phẩm – không click được kết quả "
+                f"(URL vẫn: {driver.current_url})")
         return False
+    time.sleep(1.5)
+
+    return _tc34_verify_on_hand(driver, wait, _parse_price)
 
 
 def run_sales_suite(driver, wait, selected_tcs: list[str] | None = None):
